@@ -116,6 +116,8 @@ module Plutus.Model.Contract (
 
 ) where
 
+import GHC.Stack (HasCallStack)
+
 import Control.Monad.State.Strict
 import Prelude
 
@@ -129,7 +131,7 @@ import Data.Set qualified as S
 import Data.Sequence qualified as Seq (drop, length)
 
 import Test.Tasty (TestTree)
-import Test.Tasty.HUnit
+import Test.Tasty.HUnit hiding (HasCallStack)
 
 import Plutus.Model.Fork.Ledger.TimeSlot (posixTimeToEnclosingSlot, slotToEndPOSIXTime)
 import Plutus.V1.Ledger.Address
@@ -263,7 +265,7 @@ getHeadRef :: UserSpend -> TxOutRef
 getHeadRef UserSpend{..} = Fork.txInRef $ S.elemAt 0 userSpend'inputs
 
 -- | Variant of spend' that fails in run-time if there are not enough funds to spend.
-spend :: PubKeyHash -> Value -> Run UserSpend
+spend :: HasCallStack => PubKeyHash -> Value -> Run UserSpend
 spend pkh val = do
   mSp <- spend' pkh val
   pure $ fromJust mSp
@@ -274,7 +276,7 @@ spend pkh val = do
  We can only spend by submitting TXs, so if you run it twice
  it will choose from the same set of UTXOs.
 -}
-spend' :: PubKeyHash -> Value -> Run (Maybe UserSpend)
+spend' :: HasCallStack => PubKeyHash -> Value -> Run (Maybe UserSpend)
 spend' pkh expected = do
   refs <- txOutRefAt (pubKeyHashAddress pkh)
   mUtxos <- fmap (\m -> mapM (\r -> (r,) <$> M.lookup r m) refs) $ gets mockUtxos
