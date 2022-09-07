@@ -204,6 +204,8 @@ import Cardano.Ledger.Babbage.PParams
 import Plutus.Model.Fork.Cardano.Alonzo qualified as Alonzo
 import Plutus.Model.Fork.Cardano.Babbage qualified as Babbage
 
+import Debug.Trace
+
 newtype User = User
   { userSignKey :: C.KeyPair 'C.Witness C.StandardCrypto
   }
@@ -514,6 +516,7 @@ sendSingleTx preTx = do
 checkSingleTx ::
   forall era .
   ( ExtendedUTxO era,
+    Show (Core.Tx era),
     CBOR.ToCBOR (Core.Tx era),
     HasField "inputs" (Core.TxBody era) (Set (C.TxIn (Crypto era))),
     HasField "certs" (Core.TxBody era) (StrictSeq (C.DCert (Crypto era))),
@@ -538,7 +541,7 @@ checkSingleTx params (Tx extra tx) =
         withUTxO $ \utxo ->
           withCheckBalance utxo txBody $
             withCheckUnits utxo txBody $ \cost -> do
-              let txSize = fromIntegral $ BS.length $ CBOR.serialize' txBody
+              let txSize = fromIntegral $ BS.length $ CBOR.serialize' $ traceShowId txBody
                   stat = Stat txSize cost
               withCheckTxLimits stat $ do
                 applyTx stat tid (Tx extra tx)
